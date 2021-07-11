@@ -14,3 +14,4 @@ struct Meme {
     var image: UIImage?
     var memedImage: UIImage?
 }
+

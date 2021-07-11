@@ -25,28 +25,18 @@ class MemeDetailViewController: UIViewController {
         super.viewDidLoad()
         
         imageView.image = selectedMeme.memedImage
-    }
-
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
-        guard let segueId = segue.identifier else {
-            return
-        }
-        
-        switch segueId {
-            
-        case "detailViewSegueToEditor":
-            // segue is to editor's navigation controller; need to reach its child view controller
-            let controller = segue.destination as! MemeEditorViewController
-            controller.DEFAULT_TOP_TEXT = selectedMeme.top
-            controller.DEFAULT_BOTTOM_TEXT = selectedMeme.bottom
-            controller.selectedImage = selectedMeme.image
-            
-            controller.cameFromDetail = true
-            
-        default:
-            print("unknown segue: \(segueId)")
-        }
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(editButtonPressed))
+        navigationItem.title = "Meme Detail"
     }
     
+    @objc func editButtonPressed() {
+        let editorController = self.storyboard!.instantiateViewController(withIdentifier: "MemeEditorViewController") as! MemeEditorViewController
+        editorController.DEFAULT_TOP_TEXT = selectedMeme.top
+        editorController.DEFAULT_BOTTOM_TEXT = selectedMeme.bottom
+        editorController.selectedImage = selectedMeme.image
+        editorController.cameFromDetail = true
+        editorController.modalPresentationStyle = .fullScreen
+        present(editorController, animated: true, completion: nil)
+    }
 }

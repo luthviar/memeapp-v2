@@ -9,6 +9,8 @@ import UIKit
 
 class MemeEditorViewController: UIViewController, UINavigationControllerDelegate, UIImagePickerControllerDelegate, UITextFieldDelegate {
     
+    // MARK: - Properties
+    
     @IBOutlet weak var imageEditorView: UIImageView!
     @IBOutlet weak var cameraButton: UIBarButtonItem!
     @IBOutlet weak var photoLibraryButton: UIBarButtonItem!
@@ -28,8 +30,7 @@ class MemeEditorViewController: UIViewController, UINavigationControllerDelegate
     var cameFromDetail = false
     var selectedImage: UIImage!
     var memedImage: UIImage!
-    
-    var memeObjects : [Meme] = []
+        
     var memeTextAttributes : [NSAttributedString.Key: Any] = [
         NSAttributedString.Key.strokeColor : UIColor.black,
         NSAttributedString.Key.foregroundColor : UIColor.white,
@@ -60,6 +61,8 @@ class MemeEditorViewController: UIViewController, UINavigationControllerDelegate
         case papyrus = "Papyrus"
     }
     
+    // MARK: - UI View Controller Overrides
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI(isDefault: true)
@@ -71,7 +74,7 @@ class MemeEditorViewController: UIViewController, UINavigationControllerDelegate
         subscribeToKeyboardNotifications()
         cameraButton.isEnabled = UIImagePickerController.isSourceTypeAvailable(.camera)
         photoLibraryButton.isEnabled = UIImagePickerController.isSourceTypeAvailable(.photoLibrary)
-        shareButton.isEnabled = (imageEditorView.image != nil) ? true : false
+        shareButton.isEnabled = (imageEditorView.image != DEFAULT_IMAGE) ? true : false
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -139,10 +142,22 @@ class MemeEditorViewController: UIViewController, UINavigationControllerDelegate
         self.present(alert, animated: true, completion: nil)
     }
     
-    func showAlert(_ title: String, message: String) {
+    func showAlert(_ title: String,
+                   message: String,
+                   canCancel: Bool = false,
+                   okTitle: String = "OK",
+                   cancelTitle: String = "Cancel",
+                   completionOk: @escaping () -> () = {  }) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
             
-        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        alert.addAction(UIAlertAction(title: okTitle, style: .default, handler: { UIAlertAction in
+            completionOk()
+        }))
+        
+        if canCancel {
+            alert.addAction(UIAlertAction(title: cancelTitle, style: .cancel, handler: nil))
+        }
+        
         
         self.present(alert, animated: true, completion: nil)
     }
@@ -155,7 +170,8 @@ class MemeEditorViewController: UIViewController, UINavigationControllerDelegate
             activityController.completionWithItemsHandler = { activity, completed, items, error in
                 if (completed) {
                     self.save()
-                    self.performSegue(withIdentifier: "unwindSegueFromEditor", sender: self)
+                    self.dismiss(animated: true, completion: nil)
+                    self.showAlert("Your Meme has been successfully shared!", message: "")
                 }
             }
             
@@ -242,7 +258,6 @@ class MemeEditorViewController: UIViewController, UINavigationControllerDelegate
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
-        
         return true
     }
     
@@ -258,14 +273,12 @@ class MemeEditorViewController: UIViewController, UINavigationControllerDelegate
         case .fonts:
             showPopUpFonts("Choose Font", message: "Let's choose your best font for the meme!")
         case .cancel:
-            setupUI(isDefault: true)
-            if cameFromDetail == true {
-                // return to detail view instead of table/collection
+            if self.shareButton.isEnabled {
+                showAlert("Are you sure to cancel?", message: "", canCancel: true, okTitle: "Yes", cancelTitle: "No") {
+                    self.dismiss(animated: true, completion: nil)
+                }
+            } else {
                 dismiss(animated: true, completion: nil)
-            }
-            else {
-                // return to table/collection
-                performSegue(withIdentifier: "unwindSegueFromEditor", sender: self)
             }
         case .share:
             share()
@@ -283,10 +296,6 @@ class MemeEditorViewController: UIViewController, UINavigationControllerDelegate
         }
     }
     
-    func subscribeToKeyboardNotifications() {
-        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(_:)), name: UIResponder.keyboardWillShowNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
-    }
     
     @objc func keyboardWillHide(_ notification:Notification) {
         if bottomTextField.isFirstResponder {
@@ -294,6 +303,11 @@ class MemeEditorViewController: UIViewController, UINavigationControllerDelegate
         }
     }
     
+    func subscribeToKeyboardNotifications() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(_:)), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+        
     func unsubscribeToKeyboardNotifications() {
         NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)

@@ -12,20 +12,13 @@ class MemesCollectionViewController: UICollectionViewController, UICollectionVie
     // MARK: - Properties: Non-Outlets
     
     let reusableCollectionCellIdentifier = "memeCellCollection"
-    
-    // indicates whether this controller initiated a segue -
-    //  used to determine whether this controller can respond to an unwind request
-    var startedEditorSegue = false
-    var startedDetailSegue = false
-    
+        
     
     // MARK: - Collection View Controller Overrides
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        // Register cell classes - not needed because "registered" within storyboard
-        // self.collectionView!.registerClass(UICollectionViewCell.self, forCellWithReuseIdentifier: reusableCollectionCellIdentifier)
+              
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -38,48 +31,7 @@ class MemesCollectionViewController: UICollectionViewController, UICollectionVie
         
         // reload collection to ensure all memes are displayed
         collectionView!.reloadData()
-    }
-
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        
-        guard let segueId = segue.identifier else {
-            return
-        }
-        
-        switch segueId {
-            
-        case "collectionViewSegueToDetail":
-            let sendingCell = sender as! UICollectionViewCell
-            let sendingCellIndexPath = collectionView!.indexPath(for: sendingCell)!
-            let selectedMeme = sendingCellIndexPath.row
-            
-            let controller = segue.destination as! MemeDetailViewController
-            controller.selectedMeme = MemeData.allMemes[selectedMeme]
-            
-            startedDetailSegue = true
-            
-        case "collectionViewSegueToEditor":
-            startedEditorSegue = true
-            
-        default:
-            print("unknown segue: \(segueId)")
-        }
-    }
-    
-    override func canPerformUnwindSegueAction(_ action: Selector, from fromViewController: UIViewController, withSender sender: Any) -> Bool {
-        
-        // if we started the segue, then we can handle it; otherwise, pass
-        switch action {
-            
-        case #selector(unwindFromEditor(_:)):
-            let isUnwindResponder = startedDetailSegue || startedEditorSegue
-            
-            return isUnwindResponder
-            
-        default:
-            return false
-        }
-    }
+    }        
     
     override func willRotate(to toInterfaceOrientation: UIInterfaceOrientation, duration: TimeInterval) {
         
@@ -87,22 +39,26 @@ class MemesCollectionViewController: UICollectionViewController, UICollectionVie
         collectionView!.reloadData()
     }
     
+    override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let selectedMeme = indexPath.row
+        let detailController = self.storyboard!.instantiateViewController(withIdentifier: "MemeDetailViewController") as! MemeDetailViewController
+        detailController.selectedMeme = MemeData.allMemes[selectedMeme]
+        navigationController!.pushViewController(detailController, animated: true)
+    }
+    
     
     // MARK: - Actions
     
-    @IBAction func unwindFromEditor(_ segue: UIStoryboardSegue) {
-        
-        // the editor's unwind came here; all we need do is revert the indicator
-        //    to false, so it's valid for the next unwind action
-        startedEditorSegue = false
-        startedDetailSegue = false
+    @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
+        let editorController = self.storyboard!.instantiateViewController(withIdentifier: "MemeEditorViewController") as! MemeEditorViewController
+        editorController.modalPresentationStyle = .fullScreen
+        present(editorController, animated: true, completion: nil)
     }
+    
     
     
     // MARK: - Collection View Data Source
 
-    // using default number of sections (1), so no override for numberOfSections
-    
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         
         let numItems = MemeData.allMemes.count
@@ -131,20 +87,19 @@ class MemesCollectionViewController: UICollectionViewController, UICollectionVie
         }
                
         let emptyMessageText = "No memes sent yet!\nPress + to create a new meme\nand share it."
-        let fontName = "Palatino-Italic"
         let fontSize: CGFloat = 20.0
         
         if !isEmpty {
             if theCollectionView.backgroundView != nil {
                 theCollectionView.backgroundView = nil
             }
-        }
-        else {
+        } else {
             if theCollectionView.backgroundView == nil {
                 let emptyMessageLabel = UILabel(frame: CGRect(x: 0, y: 0, width: view.bounds.size.width, height: view.bounds.size.height))
                 emptyMessageLabel.text = emptyMessageText
                 emptyMessageLabel.numberOfLines = 0
-                emptyMessageLabel.font = UIFont(name: fontName, size: fontSize)
+                emptyMessageLabel.font = UIFont.systemFont(ofSize: fontSize)
+                emptyMessageLabel.textColor = UIColor.lightGray
                 emptyMessageLabel.textAlignment = .center
                 emptyMessageLabel.sizeToFit()
                 
@@ -152,5 +107,7 @@ class MemesCollectionViewController: UICollectionViewController, UICollectionVie
             }
         }
     }
+    
+    
     
 }
